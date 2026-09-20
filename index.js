@@ -1,4 +1,5 @@
 import express from "express";
+import helmet from "helmet";
 import connectDB from "./config/database.js";
 import dotenv from "dotenv";
 import userRouter from "./routes/userRouter.js";
@@ -10,7 +11,10 @@ dotenv.config();
 
 const app = express();
 
-app.use(express.json());
+// security headers (no X-Powered-By, no MIME sniffing, ...)
+app.use(helmet());
+// a chat message is at most 4000 characters, a small body limit stops oversized requests early
+app.use(express.json({limit : "20kb"}));
 app.use(cookieParser());
 
 app.use("/user", userRouter);
@@ -22,6 +26,11 @@ app.use((err, req, res, next)=>{
     if(err.type === "entity.parse.failed"){
         return res.status(400).json({
             message : "Invalid JSON body"
+        });
+    }
+    if(err.type === "entity.too.large"){
+        return res.status(413).json({
+            message : "Request body is too large"
         });
     }
     console.log(err);
