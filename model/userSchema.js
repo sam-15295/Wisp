@@ -29,14 +29,15 @@ const userSchema = new mongoose.Schema({
       default: 0
     },
 
+    // TOKEN_LIMIT from .env, read when the user is created (a function so dotenv has already run)
     tokenLimit: {
       type: Number,
-      default: 10000
+      default: () => Number(process.env.TOKEN_LIMIT) || 10000
     },
 
     resetAt: {
       type: Date,
-      default: () => new Date(Date.now() + 5 * 60 * 60 * 1000)
+      default: () => new Date(Date.now() + (Number(process.env.TOKEN_WINDOW_HOURS) || 5) * 60 * 60 * 1000)
     },
 
     totalTokenUsed: {
