@@ -14,10 +14,18 @@ const createToken = (id, email)=>{
     return token;
 }
 
+// secure cookies need https, so they are switched on only in production
 const cookiesOption = {
     httpOnly : true,
-    secure : false,
+    secure : process.env.NODE_ENV === "production",
+    sameSite : "lax",
     maxAge : 60*60*1000
+}
+
+const clearCookiesOption = {
+    httpOnly : true,
+    secure : process.env.NODE_ENV === "production",
+    sameSite : "lax"
 }
 
 export const signup = async (req, res)=>{
@@ -61,6 +69,12 @@ export const signup = async (req, res)=>{
 
     }
     catch(err){
+        // two signups with the same email can both pass findOne, the unique index stops the second one
+        if(err.code === 11000){
+            return res.status(409).json({
+                message : "Email Id already exist"
+            })
+        }
         console.log(err);
         return res.status(500).json({
             message : "Internal Server error"
@@ -119,10 +133,7 @@ export const login = async (req, res)=>{
 }
 
 export const logout = async (req, res)=>{
-    res.clearCookie("token", {
-        httpOnly : true,
-        secure : false,
-    });
+    res.clearCookie("token", clearCookiesOption);
 
     res.status(200).json({
         message : "User Logged Out Successfully"
@@ -154,10 +165,9 @@ export const deleteAccount = async (req, res) => {
         // find all the chatId which belong to user
          const userId = req.user._id;
 
-         const chatIds = await Chat.find({userId}).select("_id"); 
-
+         // every message stores its owner, so no need to look up the chat ids first
          await Message.deleteMany({
-            chatId : {$in : chatIds}
+            userId
          });
 
          await Chat.deleteMany({
@@ -168,24 +178,14 @@ export const deleteAccount = async (req, res) => {
             _id : userId
          });
 
-         res.clearCookie("token", {
-            httpOnly : true,
-            secure : false
-         });
+         res.clearCookie("token", clearCookiesOption);
 
          res.status(200).json({
             message : "Account deleted successfully"
          });
-
-        // delete all the messages which belongs to the chatId
-
-        // delete all the messages
-
-        // delete all the chats
-
-        // delete profile
     }
     catch (err) {
+        console.log(err);
         res.status(500).json({
             message : "Internal Server Error!"
         })

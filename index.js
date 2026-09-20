@@ -17,6 +17,19 @@ app.use("/user", userRouter);
 app.use("/msg", messageRouter);
 app.use("/chat", chatRouter);
 
+// last middleware: malformed JSON bodies should get a JSON 400, not Express's default HTML page
+app.use((err, req, res, next)=>{
+    if(err.type === "entity.parse.failed"){
+        return res.status(400).json({
+            message : "Invalid JSON body"
+        });
+    }
+    console.log(err);
+    res.status(500).json({
+        message : "Internal Server Error"
+    });
+});
+
 const startServer = async ()=>{
     try{
         await connectDB();
