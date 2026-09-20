@@ -1,0 +1,27 @@
+/* One place for every color, radius and spacing value. Nothing outside this palette is used. */
+:root {
+  --bg: #171310;
+  --surface: #211c17;
+  --surface-hover: #2a241d;
+  --border: #332c24;
+  --accent: #e8874a;
+  --accent-muted: #e8874a22;
+  --text-primary: #f2ede7;
+  --text-secondary: #a69c90;
+  --assistant-bubble: #1f1a15;
+  --error: #d9634a;
+  --success: #6fae7d;
+
+  --radius-card: 10px;
+  --radius-control: 8px;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+
+  --font-ui: "Manrope", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "Cascadia Code", Consolas, monospace;
+}
