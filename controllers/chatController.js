@@ -14,7 +14,7 @@ export const getRecentChat = async (req, res) =>{
         const chats = await Chat.find({userId : req.user._id})
         .select("topic updatedAt")
         .sort({updatedAt : -1})
-        .limit(20);
+        .limit(50);
 
         res.status(200)
         .json({
@@ -124,6 +124,50 @@ export const deleteChat = async (req, res) =>{
          res.status(200).json({
             message : "Your chat deleted successfully"
          })
+    }
+    catch(err){
+        console.log(err);
+        res.status(500).json({
+            message : "Internal Server Error"
+        })
+    }
+}
+
+export const renameChat = async (req, res) =>{
+    try{
+        const {chatId} = req.params;
+        const {topic} = req.body;
+
+        if(typeof topic !== "string" || topic.trim() === ""){
+            return res.status(400).json({
+                message : "Chat name is required"
+            })
+        }
+
+        if(topic.trim().length > 60){
+            return res.status(400).json({
+                message : "Chat name cannot be longer than 60 characters"
+            })
+        }
+
+        // the userId in the filter makes sure nobody can rename someone else's chat
+        const chat = await Chat.findOneAndUpdate(
+            {_id : chatId, userId : req.user._id},
+            {topic : topic.trim()},
+            {returnDocument : "after"}
+        );
+
+        if(!chat){
+            return res.status(404).json({
+                message : "Chat Not Found"
+            })
+        }
+
+        res.status(200).json({
+            message : "Chat renamed",
+            chatId : chat._id,
+            topic : chat.topic
+        });
     }
     catch(err){
         console.log(err);
