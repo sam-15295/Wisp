@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { groupChats } from "./groupChats.js";
-import { formatResetIn, formatTokens, initialOf } from "./format.js";
+import { formatResetIn, formatTokens, initialOf, shortModel } from "./format.js";
 
 const now = new Date(2026, 8, 20, 15, 0, 0);
 const daysAgo = (days, hour = 10) => new Date(2026, 8, 20 - days, hour, 0, 0).toISOString();
@@ -53,4 +53,11 @@ test("initialOf returns an upper-case first letter", () => {
   assert.equal(initialOf("  sameer"), "S");
   assert.equal(initialOf(""), "?");
   assert.equal(initialOf(undefined), "?");
+});
+
+test("shortModel shortens specific free models but keeps the router name", () => {
+  assert.equal(shortModel("nvidia/nemotron-3.5-lightning:free"), "nemotron-3.5-lightning");
+  assert.equal(shortModel("openrouter/free"), "openrouter/free");
+  assert.equal(shortModel(""), "");
+  assert.equal(shortModel(undefined), "");
 });

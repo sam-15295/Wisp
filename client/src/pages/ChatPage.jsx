@@ -1,31 +1,34 @@
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Menu } from "lucide-react";
 import { api } from "../api.js";
 import { useAuth } from "../context/AuthContext.jsx";
 import Sidebar from "../components/Sidebar.jsx";
-import { WispGlyph } from "../components/Logo.jsx";
-import { APP_NAME } from "../config.js";
+import ChatWindow from "../components/ChatWindow.jsx";
 
 const ChatPage = () => {
   const { chatId } = useParams();
   const navigate = useNavigate();
-  const { user, usage, logout, deleteAccount } = useAuth();
+  const { user, usage, setUsage, refreshProfile, logout, deleteAccount } = useAuth();
 
   const [chats, setChats] = useState([]);
+  const [models, setModels] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
+  // returns the fresh list so callers can look at it (the chat window uses this after a stopped reply)
   const loadChats = useCallback(async () => {
     try {
       const data = await api.getChats();
       setChats(data.chats);
+      return data.chats;
     } catch (err) {
       // a 401 is handled globally, anything else just leaves the old list in place
+      return null;
     }
   }, []);
 
   useEffect(() => {
     loadChats();
+    api.getModels().then(setModels).catch(() => {});
   }, [loadChats]);
 
   const renameChat = async (id, topic) => {
@@ -49,6 +52,8 @@ const ChatPage = () => {
     }
   };
 
+  const activeChat = chats.find((chat) => chat._id === chatId);
+
   return (
     <div className="app">
       <Sidebar
@@ -68,20 +73,17 @@ const ChatPage = () => {
         onDeleteAccount={deleteAccount}
       />
 
-      <main className="main">
-        <header className="main-header">
-          <button className="icon-btn menu-btn" aria-label="Open menu" onClick={() => setSidebarOpen(true)}>
-            <Menu size={20} strokeWidth={1.8} />
-          </button>
-          <span className="main-title">{APP_NAME}</span>
-        </header>
-
-        <div className="empty-state">
-          <span className="empty-glyph"><WispGlyph size={28} /></span>
-          <h1>How can I help you today?</h1>
-          <p>The chat window arrives in the next step.</p>
-        </div>
-      </main>
+      <ChatWindow
+        chatId={chatId}
+        title={activeChat?.topic}
+        models={models}
+        userName={user.name}
+        onOpenMenu={() => setSidebarOpen(true)}
+        onCreated={(id) => navigate("/c/" + id)}
+        onChatsChanged={loadChats}
+        setUsage={setUsage}
+        refreshProfile={refreshProfile}
+      />
     </div>
   );
 };

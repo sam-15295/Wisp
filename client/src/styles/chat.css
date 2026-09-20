@@ -1,0 +1,127 @@
+/* ---------- header extras ---------- */
+.model-chip {
+  margin-left: auto; padding: 2px var(--space-3);
+  font-family: var(--font-mono); font-size: 12px; color: var(--text-secondary);
+  border: 1px solid var(--border); border-radius: var(--radius-control);
+  max-width: 45%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+/* ---------- thread ---------- */
+.thread-scroll { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; }
+.thread { width: 100%; max-width: 720px; margin: 0 auto; padding: var(--space-5) var(--space-4); display: flex; flex-direction: column; gap: var(--space-4); }
+.thread-status { margin: auto; color: var(--text-secondary); }
+
+.msg { display: flex; gap: var(--space-3); align-items: flex-start; }
+.msg-user { justify-content: flex-end; }
+
+.bubble-user {
+  max-width: 70%; padding: var(--space-3) var(--space-4);
+  background: var(--accent-muted); border-left: 3px solid var(--accent);
+  border-radius: var(--radius-card); white-space: pre-wrap; overflow-wrap: anywhere;
+}
+
+.msg-assistant { padding: var(--space-3) var(--space-4) var(--space-3) var(--space-3); background: var(--assistant-bubble); border-radius: var(--radius-card); }
+.bubble-assistant { flex: 1; min-width: 0; }
+
+.msg-meta {
+  display: flex; gap: var(--space-3); margin-top: var(--space-2);
+  font-family: var(--font-mono); font-size: 11px; color: var(--text-secondary);
+}
+.tag-stopped { color: var(--accent); }
+
+/* ---------- markdown inside replies ---------- */
+.markdown > :first-child { margin-top: 0; }
+.markdown > :last-child { margin-bottom: 0; }
+.markdown p { margin: 0 0 var(--space-3); overflow-wrap: anywhere; }
+.markdown ul, .markdown ol { margin: 0 0 var(--space-3); padding-left: var(--space-5); }
+.markdown li { margin: var(--space-1) 0; }
+.markdown h1, .markdown h2, .markdown h3 { margin: var(--space-4) 0 var(--space-2); line-height: 1.3; }
+.markdown h1 { font-size: 20px; } .markdown h2 { font-size: 17px; } .markdown h3 { font-size: 15px; }
+.markdown blockquote { margin: 0 0 var(--space-3); padding-left: var(--space-3); color: var(--text-secondary); border-left: 3px solid var(--border); }
+.markdown a { text-decoration: underline; }
+.markdown hr { border: 0; border-top: 1px solid var(--border); margin: var(--space-4) 0; }
+
+.markdown code {
+  font-family: var(--font-mono); font-size: 13px; padding: 1px 6px;
+  background: var(--bg); border: 1px solid var(--border); border-radius: 6px;
+}
+.code-block { position: relative; margin: 0 0 var(--space-3); }
+.code-block pre {
+  margin: 0; padding: var(--space-4); overflow-x: auto;
+  background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-card);
+}
+.code-block pre code { padding: 0; background: none; border: 0; font-size: 13px; line-height: 1.55; }
+.code-copy {
+  position: absolute; top: var(--space-2); right: var(--space-2);
+  display: flex; align-items: center; gap: var(--space-1); padding: 3px var(--space-2);
+  font-size: 12px; color: var(--text-secondary); background: var(--surface);
+  border: 1px solid var(--border); border-radius: 6px;
+}
+.code-copy:hover { color: var(--text-primary); }
+
+.markdown table { display: block; max-width: 100%; overflow-x: auto; border-collapse: collapse; margin: 0 0 var(--space-3); }
+.markdown th, .markdown td { padding: 6px var(--space-3); border: 1px solid var(--border); text-align: left; }
+.markdown th { background: var(--surface); }
+
+/* ---------- typing indicator ---------- */
+.typing { display: flex; align-items: center; gap: 5px; min-height: 28px; }
+.typing span { width: 7px; height: 7px; background: var(--accent); border-radius: 50%; animation: pulse 1.2s ease-in-out infinite; }
+.typing span:nth-child(2) { animation-delay: 0.2s; }
+.typing span:nth-child(3) { animation-delay: 0.4s; }
+.typing em { margin-left: var(--space-2); font-style: normal; font-size: 13px; color: var(--text-secondary); }
+@keyframes pulse { 0%, 80%, 100% { opacity: 0.25; } 40% { opacity: 1; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .typing span { animation: none; opacity: 0.7; }
+}
+
+/* ---------- composer ---------- */
+.composer { flex-shrink: 0; width: 100%; max-width: 720px; margin: 0 auto; padding: var(--space-2) var(--space-4) var(--space-3); }
+.composer-box {
+  display: flex; align-items: flex-end; gap: var(--space-2); padding: var(--space-2) var(--space-2) var(--space-2) var(--space-4);
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-card);
+}
+.composer-box:focus-within { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.composer-box textarea {
+  flex: 1; min-width: 0; max-height: 144px; padding: 6px 0; resize: none;
+  font: inherit; line-height: 1.6; color: var(--text-primary);
+  background: transparent; border: 0; outline: none;
+}
+.composer-box textarea::placeholder { color: var(--text-secondary); }
+.composer-hint { margin: var(--space-2) 0 0; text-align: center; font-size: 12px; color: var(--text-secondary); }
+
+.send-btn {
+  display: grid; place-items: center; width: 36px; height: 36px; flex-shrink: 0;
+  color: var(--bg); background: var(--accent); border: 0; border-radius: 50%;
+}
+.send-btn:hover:not(:disabled) { filter: brightness(1.1); }
+.send-btn:disabled { color: var(--text-secondary); background: var(--border); }
+.send-btn-stop { background: var(--text-primary); }
+
+/* ---------- error banner ---------- */
+.error-banner {
+  display: flex; align-items: center; gap: var(--space-3); flex-shrink: 0;
+  width: calc(100% - var(--space-5)); max-width: 720px; margin: 0 auto var(--space-2); padding: var(--space-2) var(--space-3);
+  font-size: 14px; color: var(--error); background: var(--surface); border: 1px solid var(--error); border-radius: var(--radius-control);
+}
+.error-banner span { flex: 1; }
+
+/* ---------- new chat extras ---------- */
+.model-picker { display: flex; align-items: center; gap: var(--space-2); margin-top: var(--space-2); font-size: 13px; color: var(--text-secondary); }
+.model-picker select {
+  font: inherit; font-family: var(--font-mono); font-size: 13px; color: var(--text-primary);
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-control); padding: 6px var(--space-3);
+}
+
+.starters { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--space-2); margin-top: var(--space-4); max-width: 640px; }
+.starter {
+  padding: 8px var(--space-3); font-size: 14px; color: var(--text-primary);
+  background: transparent; border: 1px solid var(--border); border-radius: var(--radius-control);
+}
+.starter:hover { background: var(--surface-hover); border-color: var(--accent); }
+
+@media (max-width: 760px) {
+  .bubble-user { max-width: 85%; }
+  .model-chip { max-width: 40%; }
+  .thread { padding: var(--space-4) var(--space-3); }
+}

@@ -121,7 +121,6 @@
   gap: var(--space-2); padding: var(--space-5); text-align: center;
 }
 .empty-state h1 { margin: 0; font-size: 26px; font-weight: 700; letter-spacing: -0.01em; }
-.empty-state p { margin: 0; color: var(--text-secondary); }
 .empty-glyph {
   display: grid; place-items: center; width: 52px; height: 52px; margin-bottom: var(--space-2);
   color: var(--accent); background: var(--accent-muted); border-radius: var(--radius-card);

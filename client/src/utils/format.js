@@ -16,3 +16,11 @@ export const formatResetIn = (resetAt, now = Date.now()) => {
 };
 
 export const initialOf = (name) => (name || "?").trim().charAt(0).toUpperCase() || "?";
+
+// "nvidia/nemotron-3.5-lightning:free" -> "nemotron-3.5-lightning", the router name stays as it is
+export const shortModel = (model) => {
+  if (!model) {
+    return "";
+  }
+  return model.endsWith(":free") ? model.split("/").pop().replace(":free", "") : model;
+};
