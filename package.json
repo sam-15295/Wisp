@@ -1,7 +1,7 @@
 {
-  "name": "chatgpt",
+  "name": "wisp",
   "version": "1.0.0",
-  "description": "",
+  "description": "Wisp - a chat app with streaming replies, token quotas and rolling-summary memory",
   "main": "index.js",
   "scripts": {
     "test": "node --test",
