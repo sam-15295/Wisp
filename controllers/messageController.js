@@ -1,6 +1,5 @@
 import Chat from "../model/chatSchema.js";
 import Message from "../model/messageSchema.js";
-import mongoose from "mongoose";
 import generateAIResponse from "../service/openRouter.js";
 import "dotenv/config";
 //getMessage, sendMessage
@@ -55,13 +54,7 @@ export const sendMessage = async(req, res) => {
 
     // 2. Existing chat case
     if (chatId) {
-      // Check valid MongoDB ObjectId
-      if (!mongoose.Types.ObjectId.isValid(chatId)) {
-        return res.status(400).json({
-          message: "Invalid chat id"
-        });
-      }
-
+      // chatId format is already checked by router.param("chatId")
       chat = await Chat.findOne({
         _id: chatId,
         userId: req.user._id

@@ -25,7 +25,7 @@ export const getSingleChat = async (req, res) =>{
     try{
         const {chatId} = req.params;
 
-        const chat = Chat.findOne({_id : chatId, userId : req.user._id});
+        const chat = await Chat.findOne({_id : chatId, userId : req.user._id});
 
         if(!chat){
             return res.status(404)
@@ -38,6 +38,8 @@ export const getSingleChat = async (req, res) =>{
             chatId : chat._id,
             userId : chat.userId,
             topic : chat.topic,
+            model : chat.model,
+            messageCount : chat.messageCount,
             usage : chat.usage
         });
     }
@@ -91,8 +93,8 @@ export const deleteChat = async (req, res) =>{
          const chat = await Chat.findOne({_id : chatId, userId : req.user._id});
 
          if(!chat){
-            return res.status(403).json({
-                message : "You are not allowed to do this"
+            return res.status(404).json({
+                message : "Chat Not Found"
             })
          }
 
