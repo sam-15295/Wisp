@@ -35,6 +35,12 @@ const messageSchema = new mongoose.Schema({
     default: ""
   },
 
+  // true when the user stopped the reply half way, so this message holds only a part of the answer
+  interrupted: {
+    type: Boolean,
+    default: false
+  },
+
   usage: {
     promptTokens: {
       type: Number,
