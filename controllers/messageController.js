@@ -3,6 +3,7 @@ import Message from "../model/messageSchema.js";
 import generateAIResponse from "../service/openRouter.js";
 import {buildContext, estimateTokens} from "../service/contextBuilder.js";
 import {reserveTokens, settleTokens, refundTokens, getUsage} from "../service/quotaService.js";
+import {maybeSummarize} from "../service/summaryService.js";
 import {isModelAllowed} from "../config/models.js";
 import "dotenv/config";
 //getMessage, sendMessage
@@ -92,13 +93,15 @@ export const sendMessage = async(req, res) => {
 
       chatModel = chat.model;
 
-      const recent = await Message.find({chatId: chat._id})
-      .sort({createdAt: -1, _id: -1})
-      .limit(HISTORY_FETCH_LIMIT)
+      // Messages before summarizedTillMessageNumber live inside chat.summary, so they are skipped here.
+      // The second value only matters if summarizing keeps failing and unsummarized messages pile up.
+      const skip = Math.max(chat.summarizedTillMessageNumber, chat.messageCount - HISTORY_FETCH_LIMIT);
+
+      history = await Message.find({chatId: chat._id})
+      .sort({createdAt: 1, _id: 1})
+      .skip(skip)
       .select("role content")
       .lean();
-
-      history = recent.reverse();
     }
 
     // 3. New chat case (the chat itself is only created after the AI answers, so a failure leaves nothing behind)
@@ -209,6 +212,9 @@ export const sendMessage = async(req, res) => {
       usage,
       quota: updatedUsage
     });
+
+    // 11. Fold old messages into the summary in the background (the user already has the reply)
+    maybeSummarize(chat._id, req.user._id);
 
   }
     catch(err){
