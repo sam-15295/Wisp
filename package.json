@@ -4,8 +4,11 @@
   "description": "Wisp - a chat app with streaming replies, token quotas and rolling-summary memory",
   "main": "index.js",
   "scripts": {
-    "test": "node --test",
-    "start": "node index.js"
+    "dev": "node --watch index.js",
+    "start": "node index.js",
+    "client": "npm --prefix client run dev",
+    "client:build": "npm --prefix client run build",
+    "test": "node --test"
   },
   "keywords": [],
   "author": "",
