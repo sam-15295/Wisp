@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {buildContext, estimateTokens, DEFAULT_SYSTEM_PROMPT} from "../service/contextBuilder.js";
+import {buildContext, estimateTokens, getFoldCount, buildSummaryMessages, DEFAULT_SYSTEM_PROMPT} from "../service/contextBuilder.js";
 
 const msg = (role, content)=> ({role, content});
 
@@ -65,4 +65,29 @@ test("a leading assistant message is removed after trimming", ()=>{
     const firstNonSystem = result.messages.find((m)=> m.role !== "system");
 
     assert.equal(firstNonSystem.role, "user");
+});
+
+test("getFoldCount does nothing until the trigger is passed", ()=>{
+    const args = {summarizedTill : 0, trigger : 14, keepRecent : 6};
+
+    assert.equal(getFoldCount({...args, messageCount : 14}), 0);
+    assert.equal(getFoldCount({...args, messageCount : 16}), 10);
+});
+
+test("getFoldCount only counts messages that are not summarized yet", ()=>{
+    // 10 already folded, 16 unsummarized left -> fold 16 - 6 = 10 more
+    assert.equal(getFoldCount({messageCount : 26, summarizedTill : 10, trigger : 14, keepRecent : 6}), 10);
+    assert.equal(getFoldCount({messageCount : 22, summarizedTill : 10, trigger : 14, keepRecent : 6}), 0);
+});
+
+test("buildSummaryMessages includes the old summary, the transcript and truncates long messages", ()=>{
+    const result = buildSummaryMessages("Likes Rust.", [
+        {role : "user", content : "hello"},
+        {role : "assistant", content : "z".repeat(5000)}
+    ]);
+
+    assert.equal(result[0].role, "system");
+    assert.match(result[1].content, /Previous summary:\nLikes Rust\./);
+    assert.match(result[1].content, /USER: hello/);
+    assert.ok(result[1].content.length < 2000);
 });

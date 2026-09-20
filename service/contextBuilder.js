@@ -56,3 +56,36 @@ export const buildContext = ({systemPrompt = DEFAULT_SYSTEM_PROMPT, summary = ""
         droppedCount : history.length - kept.length
     };
 }
+
+// How many of the oldest unsummarized messages should be folded into the summary right now?
+// Nothing is folded until more than `trigger` messages are waiting, then everything except
+// the `keepRecent` newest messages is folded (recent messages stay word for word).
+export const getFoldCount = ({messageCount, summarizedTill, trigger, keepRecent})=>{
+    const unsummarized = messageCount - summarizedTill;
+
+    if(unsummarized <= trigger){
+        return 0;
+    }
+    return unsummarized - keepRecent;
+}
+
+const MAX_CHARS_PER_MESSAGE_IN_SUMMARY = 1200;
+
+// The prompt that asks the AI to merge the old summary and the messages being folded into one new summary.
+export const buildSummaryMessages = (previousSummary, messages)=>{
+    const transcript = messages
+    .map((message)=> message.role.toUpperCase() + ": " + message.content.slice(0, MAX_CHARS_PER_MESSAGE_IN_SUMMARY))
+    .join("\n");
+
+    return [
+        {
+            role : "system",
+            content : "You compress conversations into a short memory. Write one concise summary (under 150 words) " +
+            "that keeps names, facts, decisions, the user's preferences and unresolved questions. Output only the summary."
+        },
+        {
+            role : "user",
+            content : "Previous summary:\n" + (previousSummary || "(none)") + "\n\nNew messages:\n" + transcript
+        }
+    ];
+}
