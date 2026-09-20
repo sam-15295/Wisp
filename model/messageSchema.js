@@ -29,6 +29,12 @@ const messageSchema = new mongoose.Schema({
     default: 0
   },
 
+  // which model really answered (the free router picks a different model each time)
+  model: {
+    type: String,
+    default: ""
+  },
+
   usage: {
     promptTokens: {
       type: Number,

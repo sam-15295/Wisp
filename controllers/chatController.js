@@ -1,5 +1,14 @@
 import Chat from "../model/chatSchema.js";
 import Message from "../model/messageSchema.js";
+import {getAllowedModels, isModelAllowed} from "../config/models.js";
+
+export const getModels = async (req, res) =>{
+    res.status(200).json({
+        models : getAllowedModels(),
+        defaultModel : process.env.DEFAULT_AI_MODEL
+    });
+}
+
 export const getRecentChat = async (req, res) =>{
     try{
         const chats = await Chat.find({userId : req.user._id})
@@ -61,7 +70,13 @@ export const createChat = async (req, res) =>{
                 message : "Model name is missing"
             })
         }
-        
+
+        if(!isModelAllowed(model)){
+            return res.status(400).json({
+                message : "This model is not allowed"
+            })
+        }
+
 
         const chats = await Chat.create({
             userId : req.user._id,
