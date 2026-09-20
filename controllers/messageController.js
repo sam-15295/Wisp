@@ -1,7 +1,7 @@
 import Chat from "../model/chatSchema.js";
 import Message from "../model/messageSchema.js";
 import mongoose from "mongoose";
-import openRouter from "openRouter.js";
+import generateAIResponse from "../service/openRouter.js";
 import "dotenv/config";
 //getMessage, sendMessage
 
@@ -97,13 +97,10 @@ export const sendMessage = async(req, res) => {
       userId : req.user._id
     });
 
-    // 5. Dummy AI reply for now
-    // Later we will replace this with OpenRouter response
-    const aiReply = await openRouter.chat.send({
-      chatRequest:{
-        model : process.env.DEFAULT_AI_MODEL,
-        message
-      }
+    // 5. Get the AI reply (single turn for now, history comes in a later phase)
+    const {aiReply, usage} = await generateAIResponse({
+      model : process.env.DEFAULT_AI_MODEL,
+      messages : [{role : "user", content : content.trim()}]
     });
 
     // 6. Save assistant message
@@ -111,7 +108,8 @@ export const sendMessage = async(req, res) => {
       chatId: chat._id,
       role: "assistant",
       content: aiReply,
-      userId : req.user._id
+      userId : req.user._id,
+      usage
     });
 
     // 7. Update chat metadata

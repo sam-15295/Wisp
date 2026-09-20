@@ -1,6 +1,6 @@
 import openRouter from "../config/openRouter.js";
 
-export default generateAIResponse = async ({model, messages}) => {
+const generateAIResponse = async ({model, messages}) => {
     const completion = await openRouter.chat.send({
         chatRequest : {
             model,
@@ -26,3 +26,5 @@ export default generateAIResponse = async ({model, messages}) => {
         }
     }
 }
+
+export default generateAIResponse;
