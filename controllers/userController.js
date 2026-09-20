@@ -4,6 +4,7 @@ import bcrypt from "bcrypt";
 import {signupSchema, loginSchema} from "../validators/userValidator.js";
 import Chat from "../model/chatSchema.js";
 import Message from "../model/messageSchema.js";
+import {getUsage} from "../service/quotaService.js";
 
 const createToken = (id, email)=>{
     if(!process.env.JWT_SECRET){
@@ -142,11 +143,13 @@ export const logout = async (req, res)=>{
 
 export const profile = async (req, res)=>{
     try{
-        
+        // getUsage starts a new window if the old one expired, so the meter is never stale
+        const usage = await getUsage(req.user._id);
+
         return res.status(200).json({
             name : req.user.name,
             age : req.user.age,
-            usage : req.user.usage,
+            usage,
             email : req.user.email
         });
 

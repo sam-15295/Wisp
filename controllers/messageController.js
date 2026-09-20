@@ -2,6 +2,7 @@ import Chat from "../model/chatSchema.js";
 import Message from "../model/messageSchema.js";
 import generateAIResponse from "../service/openRouter.js";
 import {buildContext, estimateTokens} from "../service/contextBuilder.js";
+import {reserveTokens, settleTokens, refundTokens, getUsage} from "../service/quotaService.js";
 import {isModelAllowed} from "../config/models.js";
 import "dotenv/config";
 //getMessage, sendMessage
@@ -50,8 +51,8 @@ export const getMessage = async(req, res) => {
 }
 
 export const sendMessage = async(req, res) => {
-  // set only when this request creates the chat, so it can be removed again if the AI fails
-  let createdChatId = null;
+  // tokens reserved from the user's quota, given back if the request fails before they are settled
+  let reservedTokens = 0;
 
   try {
     const { chatId } = req.params;
@@ -72,7 +73,9 @@ export const sendMessage = async(req, res) => {
     }
 
     const text = content.trim();
-    let chat;
+    let chat = null;
+    let chatModel = model;
+    let history = [];
 
     // 2. Existing chat case (chatId format is already checked by router.param)
     if (chatId) {
@@ -86,9 +89,19 @@ export const sendMessage = async(req, res) => {
           message: "Chat not found"
         });
       }
+
+      chatModel = chat.model;
+
+      const recent = await Message.find({chatId: chat._id})
+      .sort({createdAt: -1, _id: -1})
+      .limit(HISTORY_FETCH_LIMIT)
+      .select("role content")
+      .lean();
+
+      history = recent.reverse();
     }
 
-    // 3. New chat case
+    // 3. New chat case (the chat itself is only created after the AI answers, so a failure leaves nothing behind)
     else {
       if (!model) {
         return res.status(400).json({
@@ -101,39 +114,56 @@ export const sendMessage = async(req, res) => {
           message: "This model is not allowed"
         });
       }
-
-      chat = await Chat.create({
-        userId: req.user._id,
-        model,
-        topic: text.slice(0, 40)
-      });
-      createdChatId = chat._id;
     }
 
     // 4. Rebuild the context: the AI remembers nothing, so we send the recent history every time
-    const recent = await Message.find({chatId: chat._id})
-    .sort({createdAt: -1, _id: -1})
-    .limit(HISTORY_FETCH_LIMIT)
-    .select("role content")
-    .lean();
+    history.push({role: "user", content: text});
 
-    const history = [...recent.reverse(), {role: "user", content: text}];
-
-    const {messages} = buildContext({
+    const {messages, promptTokenEstimate} = buildContext({
       systemPrompt: process.env.SYSTEM_PROMPT || undefined,
-      summary: chat.summary,
+      summary: chat ? chat.summary : "",
       history,
       maxContextTokens: getMaxContextTokens()
     });
 
-    // 5. Get the AI reply (the model is fixed when the chat is created)
+    // 5. Reserve tokens (worst case = prompt + the longest reply allowed) in one atomic step
+    const toReserve = promptTokenEstimate + getMaxReplyTokens();
+    const quota = await reserveTokens(req.user._id, toReserve);
+
+    if (!quota) {
+      const current = await getUsage(req.user._id);
+      const retryAfter = Math.max(1, Math.ceil((new Date(current.resetAt) - Date.now()) / 1000));
+      res.set("Retry-After", String(retryAfter));
+
+      return res.status(429).json({
+        message: "Token limit reached, try again after your window resets",
+        tokenLimit: current.tokenLimit,
+        resetAt: current.resetAt
+      });
+    }
+    reservedTokens = toReserve;
+
+    // 6. Get the AI reply (the model is fixed when the chat is created)
     const {aiReply, usage, modelUsed} = await generateAIResponse({
-      model: chat.model,
+      model: chatModel,
       messages,
       maxTokens: getMaxReplyTokens()
     });
 
-    // 6. Save both messages only after the AI answered, so a failure never leaves half a turn
+    // 7. Replace the reservation with the real cost (fall back to our estimate if the provider sent no usage)
+    const actualTokens = usage.totalTokens || (promptTokenEstimate + estimateTokens(aiReply));
+    const updatedUsage = await settleTokens(req.user._id, reservedTokens, actualTokens);
+    reservedTokens = 0;
+
+    // 8. Save the chat (if new) and both messages, only after the AI answered
+    if (!chat) {
+      chat = await Chat.create({
+        userId: req.user._id,
+        model: chatModel,
+        topic: text.slice(0, 40)
+      });
+    }
+
     const userMessage = await Message.create({
       chatId: chat._id,
       role: "user",
@@ -153,7 +183,7 @@ export const sendMessage = async(req, res) => {
       userId: req.user._id
     });
 
-    // 7. Update chat metadata with atomic $inc (two tabs sending at once cannot overwrite each other)
+    // 9. Update chat metadata with atomic $inc (two tabs sending at once cannot overwrite each other)
     const chatUpdate = {
       $inc: {
         messageCount: 2,
@@ -163,27 +193,28 @@ export const sendMessage = async(req, res) => {
       }
     };
 
-    // If topic is still default, update it from first message
+    // If topic is still default (chat made through createChat), update it from first message
     if (chat.topic === "New Chat") {
       chatUpdate.$set = {topic: text.slice(0, 40)};
     }
 
     await Chat.updateOne({_id: chat._id}, chatUpdate);
 
-    // 8. Send response
+    // 10. Send response
     res.status(201).json({
       message: "Message sent successfully",
       chatId: chat._id,
       userMessage,
       assistantMessage,
-      usage
+      usage,
+      quota: updatedUsage
     });
 
   }
     catch(err){
-        // a brand new chat with no messages is useless, remove it
-        if(createdChatId){
-            await Chat.deleteOne({_id : createdChatId});
+        // the AI failed or something broke before settling, so the user must not pay for the reservation
+        if(reservedTokens > 0){
+            await refundTokens(req.user._id, reservedTokens);
         }
 
         if(err.status){
